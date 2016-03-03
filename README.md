@@ -1,4 +1,4 @@
-sedpy ![](https://travis-ci.org/iiSeymour/sedpy.svg?branch=master)
+sedpy [![Build Status](https://travis-ci.org/iiSeymour/sedpy.svg?branch=master)](https://travis-ci.org/iiSeymour/sedpy)
 =====
 
 
