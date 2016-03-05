@@ -106,7 +106,7 @@ class TestTokenization(TestCase, SedTestRunner):
         )
 
 
-class TestSed(TestCase, SedTestRunner):
+class TestSubstitution(TestCase, SedTestRunner):
 
     def testSubstitute(self):
         """
@@ -139,6 +139,9 @@ class TestSed(TestCase, SedTestRunner):
         """
         self.assertEqual(*self.runtest('s/a/b/ig', 'Aa', 'bb'))
 
+
+class TestTranslation(TestCase, SedTestRunner):
+
     def testTranslate(self):
         """
         TR1: single character translation
@@ -150,3 +153,4 @@ class TestSed(TestCase, SedTestRunner):
         TR2: multi character translation
         """
         self.assertEqual(*self.runtest('y/abc/123/', 'abc', '123'))
+        self.assertEqual(*self.runtest('y/abc/123/', 'a2c', '123'))
