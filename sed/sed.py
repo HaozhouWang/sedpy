@@ -18,16 +18,39 @@ class Sed(object):
 
         self.tokens = []
 
-        self._hold_ = None
-        self._pattern_ = None
-        self._match_ = False
+        self.hold = None
+        self.pattern = None
+        self.match = False
 
-        self.FLAGS = oneOf('g p i d').setName('flags')('flags')
+        self.sed = self.parser()
+        self.commands = self.sed.parseString(self.script)
 
-        self.text = Forward()
+    def parser(self):
+        """
+        Sed Parser Generator
+        """
+        # Forward declaration of the pattern and replacemnt text as the delimter
+        # can be any character and will we not know it's value until parse time
+        # https://pythonhosted.org/pyparsing/pyparsing.Forward-class.html
+        text = Forward()
+
+        def define_text(script, position, token):
+            """
+            Closes round the scope of the text Forward and defines the
+            pattern and replacement tokens after the delimter is known
+
+            https://pythonhosted.org/pyparsing/pyparsing.ParserElement-class.html#setParseAction
+
+            :param script: the script being parsed
+            :param position: the position of the matched token
+            :param token: the list of matched tokens
+            """
+            text << Word(printables + ' \t', excludeChars=token[0])
+
+        flags = oneOf('g p i d').setName('flags')('flags')
 
         delimiter = Word(printables, exact=1).setName('delimiter')('delimiter')
-        delimiter.setParseAction(self.excludingDelimiter)
+        delimiter.setParseAction(define_text)
 
         step = Regex('~[0-9]+')
         step.setName('step')('step')
@@ -53,11 +76,11 @@ class Sed(object):
         subsitution = reduce(operator.add, [
             Literal('s').setName('sflag')('sflag'),
             delimiter,
-            Optional(self.text, '').setName('pattern')('pattern'),
+            Optional(text, '').setName('pattern')('pattern'),
             delimiter,
-            Optional(self.text, '').setName('replacement')('replacement'),
+            Optional(text, '').setName('replacement')('replacement'),
             delimiter,
-            ZeroOrMore(self.FLAGS).setName('flags')('flags')
+            ZeroOrMore(flags).setName('flags')('flags')
         ]).leaveWhitespace()('subsitution')
 
         subsitution.setParseAction(self.compileRegex)
@@ -65,41 +88,34 @@ class Sed(object):
         translate = reduce(operator.add, [
             Literal('y').setName('translate')('translate'),
             delimiter,
-            self.text.setName('pattern')('pattern'),
+            text.setName('pattern')('pattern'),
             delimiter,
-            self.text.setName('replacement')('replacement'),
+            text.setName('replacement')('replacement'),
             delimiter,
         ]).leaveWhitespace()('translateF')
 
         translate.setParseAction(self.translateF)
 
         actions = (subsitution | translate)
-        self.sed = Optional(condition) + actions
-        self.commands = self.sed.parseString(self.script)
+        return Optional(condition) + actions
 
-    def parseFile(self, fileh):
-        for line in fileh:
-            self._pattern_ = line
-            for command in self.commands:
-                if isfunction(command):
-                    command()
-
-    def parseString(self, string):
-        self._pattern_ = string
+    def parse_script(self, string):
+        self.pattern = string
         for command in self.commands:
             command()
 
-    def excludingDelimiter(self, s, l, t):
-        """
-        Exclude the delimiter from the pattern and replacement
-        """
-        self.text << Word(printables + ' \t', excludeChars=t[0])
+    def parse_file(self, fileh):
+        for line in fileh:
+            self.pattern = line
+            for command in self.commands:
+                if isfunction(command):
+                    command()
 
     def check_condition(self, s, location, tokens):
         self.tokens.extend(tokens)
 
         def checker():
-            self._match_ = True
+            self.match = True
         return checker
 
     def compileRegex(self, p, location, tokens):
@@ -116,14 +132,14 @@ class Sed(object):
 
             regex = tokens.pattern
             replace = tokens.replacement
-            p = re.sub(regex, replace, self._pattern_, count=g, flags=flags)
-            self._pattern_ = p
+            p = re.sub(regex, replace, self.pattern, count=g, flags=flags)
+            self.pattern = p
 
             if not self.quiet:
-                sys.stdout.write(self._pattern_)
+                sys.stdout.write(self.pattern)
 
             if 'p' in s_flags:
-                sys.stdout.write(self._pattern_)
+                sys.stdout.write(self.pattern)
 
         return print_match
 
@@ -134,7 +150,7 @@ class Sed(object):
         def tr():
             translatedLine = ''
             translate = zip(list(tokens.pattern), list(tokens.replacement))
-            for char in self._pattern_:
+            for char in self.pattern:
                 for match, replace in translate:
                     if char == match:
                         translatedLine += replace
@@ -142,7 +158,7 @@ class Sed(object):
                 else:
                     translatedLine += char
 
-            self._pattern_ = translatedLine
+            self.pattern = translatedLine
 
             if not self.quiet:
                 sys.stdout.write(translatedLine)

@@ -18,8 +18,8 @@ class SedTestRunner(object):
         Run a script on a string, returns the output and expected
         """
         sed = Sed(script, quiet=True)
-        sed.parseString(string)
-        return sed._pattern_, expected
+        sed.parse_script(string)
+        return sed.pattern, expected
 
 
 class TestTokenization(TestCase, SedTestRunner):
