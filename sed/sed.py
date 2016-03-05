@@ -1,9 +1,5 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 import re
 import sys
-import argparse
 import operator
 from inspect import isfunction
 from pyparsing import printables, oneOf, nums
@@ -152,21 +148,3 @@ class Sed(object):
                 sys.stdout.write(translatedLine)
 
         return tr
-
-
-def main():
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('script')
-    parser.add_argument('files', nargs='+')
-    parser.add_argument('-n', '--quiet', action="store_true", default=False)
-    args = parser.parse_args()
-
-    sed = Sed(args.script, quiet=args.quiet)
-
-    for filename in args.files:
-        with open(filename, 'r') as fileh:
-            sed.parseFile(fileh)
-
-if __name__ == '__main__':
-    main()
