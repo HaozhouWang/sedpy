@@ -1,6 +1,5 @@
 from sed import Sed
-from unittest import TestCase
-from cStringIO import StringIO
+from unittest import TestCase, skip
 
 
 class SedTestRunner(object):
@@ -16,19 +15,17 @@ class SedTestRunner(object):
 
     def runtest(self, script, string, expected):
         """
-        Run a script on a string, returns the output and expected
+        Run a script on a string, returns the output and expected ouput
         """
         sed = Sed(script, quiet=True)
-        sed.parse(string)
-        return sed.pattern, expected
+        return sed.parse(string), expected
 
-    def runtest_file(self, fileh, string, expected):
+    def runfiletest(self, script, strings, expected):
         """
-        Run a script on a string, returns the output and expected
+        Run a script on a list of strings, returns the output and expected output
         """
-        sed = Sed(fileh, quiet=True)
-        sed.parse_file(string)
-        return sed.pattern, expected
+        sed = Sed(script, quiet=True)
+        return [sed.parse(string) for string in strings], expected
 
 
 class TestTokenization(TestCase, SedTestRunner):
@@ -193,3 +190,13 @@ class TestTranslation(TestCase, SedTestRunner):
         """
         self.assertEqual(*self.runtest('y/abc/123/', 'abc', '123'))
         self.assertEqual(*self.runtest('y/abc/123/', 'a2c', '123'))
+
+
+class TestMatcher(TestCase, SedTestRunner):
+
+    @skip("not yet implemented the correct grammar for flag only script")
+    def testLineMatch(self):
+        """
+        MATCH1: match the first line
+        """
+        self.assertEqual(*self.runtest('1p', ['abc', '123'], ['abc']))
