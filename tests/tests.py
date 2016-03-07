@@ -32,7 +32,7 @@ class TestTokenization(TestCase, SedTestRunner):
 
     def testSimpleSubstitution1(self):
         """
-        TOKEN1: single character pattern and replacement substitution
+        TOKEN01: single character pattern and replacement substitution
         """
         self.assertEqual(
             self.tokenize('s/a/b/'),
@@ -41,7 +41,7 @@ class TestTokenization(TestCase, SedTestRunner):
 
     def testSimpleSubstitution2(self):
         """
-        TOKEN2: multi character pattern and replacement substitution
+        TOKEN02: multi character pattern and replacement substitution
         """
         self.assertEqual(
             self.tokenize('s/abc/123/'),
@@ -50,7 +50,7 @@ class TestTokenization(TestCase, SedTestRunner):
 
     def testSimpleSubstitution3(self):
         """
-        TOKEN3: substitution with non standard delimiter
+        TOKEN03: substitution with non standard delimiter
         """
         self.assertEqual(
             self.tokenize('s_a_b_'),
@@ -59,7 +59,7 @@ class TestTokenization(TestCase, SedTestRunner):
 
     def testSimpleSubstitution4(self):
         """
-        TOKEN4: substitution with numeric address
+        TOKEN04: substitution with numeric address
         """
         self.assertEqual(
             self.tokenize('1s/a/b/'),
@@ -68,7 +68,7 @@ class TestTokenization(TestCase, SedTestRunner):
 
     def testSimpleSubstitution5(self):
         """
-        TOKEN5: substitution with numeric address + offset
+        TOKEN05: substitution with numeric address + offset
         """
         self.assertEqual(
             self.tokenize('1~2s/a/b/'),
@@ -77,7 +77,7 @@ class TestTokenization(TestCase, SedTestRunner):
 
     def testSimpleSubstitution6(self):
         """
-        TOKEN6: substitution with numeric address range
+        TOKEN06: substitution with numeric address range
         """
         self.assertEqual(
             self.tokenize('1,5s/a/b/'),
@@ -86,7 +86,7 @@ class TestTokenization(TestCase, SedTestRunner):
 
     def testSimpleSubstitution7(self):
         """
-        TOKEN7: substitution with end of file address
+        TOKEN07: substitution with end of file address
         """
         self.assertEqual(
             self.tokenize('1,$s/a/b/'),
@@ -95,7 +95,7 @@ class TestTokenization(TestCase, SedTestRunner):
 
     def testSimpleSubstitution8(self):
         """
-        TOKEN8: substitution with regex address
+        TOKEN08: substitution with regex address
         """
         self.assertEqual(
             self.tokenize('/a/s/a/b/'),
@@ -104,7 +104,7 @@ class TestTokenization(TestCase, SedTestRunner):
 
     def testSimpleSubstitution9(self):
         """
-        TOKEN9: substitution with regex address range
+        TOKEN09: substitution with regex address range
         """
         self.assertEqual(
             self.tokenize('/a/,/b/s/a/b/'),
