@@ -18,6 +18,7 @@ class Sed(object):
 
         self.tokens = []
 
+        self.line = 0
         self.hold = None
         self.pattern = None
         self.match = None
@@ -97,16 +98,19 @@ class Sed(object):
         """
         # copy input line in pattern buffer
         self.pattern = line
+        self.line += 1
 
         # match pattern buffer against address constrainst
         if self.match is not None:
             if not self.match(self.pattern):
-                return
+                return self.pattern
 
         # execute script on pattern buffer
         for command in self.commands:
             if isfunction(command):
                 command()
+
+        return self.pattern
 
     def regex_match(self, regex, flag):
         """
