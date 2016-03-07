@@ -20,7 +20,7 @@ class Sed(object):
 
         self.hold = None
         self.pattern = None
-        self.match = False
+        self.match = None
 
         self.sed = self.parser()
         self.commands = self.sed.parseString(self.script)
@@ -34,16 +34,12 @@ class Sed(object):
         # https://pythonhosted.org/pyparsing/pyparsing.Forward-class.html
         text = Forward()
 
-        def define_text(script, position, token):
+        def define_text(token):
             """
             Closes round the scope of the text Forward and defines the
             pattern and replacement tokens after the delimter is known
 
             https://pythonhosted.org/pyparsing/pyparsing.ParserElement-class.html#setParseAction
-
-            :param script: the script being parsed
-            :param position: the position of the matched token
-            :param token: the list of matched tokens
             """
             text << Word(printables + ' \t', excludeChars=token[0])
 
@@ -52,26 +48,22 @@ class Sed(object):
         delimiter = Word(printables, exact=1).setName('delimiter')('delimiter')
         delimiter.setParseAction(define_text)
 
-        step = Regex('~[0-9]+')
-        step.setName('step')('step')
+        step = Regex('~[0-9]+').setName('step')('step')
 
-        num_address = Word(nums + '$') + Optional(step)
-        num_address.setName('num_address')('num_address')
+        num_address = (Word(nums + '$') + Optional(step)).setName('num_address')('num_address')
 
         regex_address = reduce(operator.add, [
-            Literal('/'),
-            Word(printables, excludeChars='/'),
-            Literal('/'),
-            Optional(Literal('i'))
+            Suppress(Literal('/')),
+            Word(printables, excludeChars='/').setName('regex')('regex*'),
+            Suppress(Literal('/'))
         ])
 
-        regex_address.setName('regex-address')('regex-address')
+        address = reduce(operator.add, [
+            (num_address ^ regex_address).setName('address1')('address1'),
+            Optional(Suppress(Literal(',')) + (num_address ^ regex_address).setName('address2')('address2')),
+        ])
 
-        address = (num_address | regex_address).setName('address')('address')
-        condition = address + Optional(Suppress(Literal(',')) + address)
-        condition.setName('condition')('condition')
-
-        condition.setParseAction(self.check_condition)
+        address.setParseAction(self.check_condition)
 
         subsitution = reduce(operator.add, [
             Literal('s').setName('sflag')('sflag'),
@@ -97,26 +89,50 @@ class Sed(object):
         translate.setParseAction(self.translateF)
 
         actions = (subsitution | translate)
-        return Optional(condition) + actions
+        return Optional(address) + actions
 
-    def parse_script(self, string):
-        self.pattern = string
+    def parse(self, line):
+        """
+        Execute the parser on single line
+        """
+        # copy input line in pattern buffer
+        self.pattern = line
+
+        # match pattern buffer against address constrainst
+        if self.match is not None:
+            if not self.match(self.pattern):
+                return
+
+        # execute script on pattern buffer
         for command in self.commands:
-            command()
+            if isfunction(command):
+                command()
 
-    def parse_file(self, fileh):
-        for line in fileh:
-            self.pattern = line
-            for command in self.commands:
-                if isfunction(command):
-                    command()
+    def regex_match(self, regex, flag):
+        """
+        :param regex: the regex match
+        :param flag: the return value on match,
+        """
+        r = re.compile(regex)
 
-    def check_condition(self, s, location, tokens):
+        def match(line):
+            if re.search(r, line):
+                return flag
+            else:
+                return not flag
+
+        return match
+
+    def check_condition(self, tokens):
         self.tokens.extend(tokens)
 
-        def checker():
-            self.match = True
-        return checker
+        if len(tokens) == 1:
+            if len(tokens.regex) == 1:
+                self.match = self.regex_match(tokens.regex[0], True)
+            elif len(tokens.num_address) == 1:
+                pass
+        elif len(tokens) == 2:
+            pass
 
     def compileRegex(self, p, location, tokens):
         """

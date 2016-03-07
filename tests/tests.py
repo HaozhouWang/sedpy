@@ -1,5 +1,6 @@
 from sed import Sed
 from unittest import TestCase
+from cStringIO import StringIO
 
 
 class SedTestRunner(object):
@@ -18,7 +19,15 @@ class SedTestRunner(object):
         Run a script on a string, returns the output and expected
         """
         sed = Sed(script, quiet=True)
-        sed.parse_script(string)
+        sed.parse(string)
+        return sed.pattern, expected
+
+    def runtest_file(self, fileh, string, expected):
+        """
+        Run a script on a string, returns the output and expected
+        """
+        sed = Sed(fileh, quiet=True)
+        sed.parse_file(string)
         return sed.pattern, expected
 
 
@@ -93,7 +102,7 @@ class TestTokenization(TestCase, SedTestRunner):
         """
         self.assertEqual(
             self.tokenize('/a/s/a/b/'),
-            ['/', 'a', '/', 's', '/', 'a', '/', 'b', '/']
+            ['a', 's', '/', 'a', '/', 'b', '/']
         )
 
     def testSimpleSubstitution9(self):
@@ -102,7 +111,25 @@ class TestTokenization(TestCase, SedTestRunner):
         """
         self.assertEqual(
             self.tokenize('/a/,/b/s/a/b/'),
-            ['/', 'a', '/', '/', 'b', '/', 's', '/', 'a', '/', 'b', '/']
+            ['a', 'b', 's', '/', 'a', '/', 'b', '/']
+        )
+
+    def testSimpleSubstitution10(self):
+        """
+        TOKEN10: substitution with regex address range
+        """
+        self.assertEqual(
+            self.tokenize('1,/b/s/a/b/'),
+            ['1', 'b', 's', '/', 'a', '/', 'b', '/']
+        )
+
+    def testSimpleSubstitution11(self):
+        """
+        TOKEN11: substitution with regex address range
+        """
+        self.assertEqual(
+            self.tokenize('/a/,1s/a/b/'),
+            ['a', '1', 's', '/', 'a', '/', 'b', '/']
         )
 
 
@@ -138,6 +165,18 @@ class TestSubstitution(TestCase, SedTestRunner):
         SUB5: single character case insensitive global substitution
         """
         self.assertEqual(*self.runtest('s/a/b/ig', 'Aa', 'bb'))
+
+    def testSubstitute6(self):
+        """
+        SUB6: single character substitution where regex address matches
+        """
+        self.assertEqual(*self.runtest('/abc/s/a/b/', 'abc', 'bbc'))
+
+    def testSubstitute7(self):
+        """
+        SUB7: single character substitution where regex address doesn't matches
+        """
+        self.assertEqual(*self.runtest('/abc/s/a/b/', 'aaa', 'aaa'))
 
 
 class TestTranslation(TestCase, SedTestRunner):

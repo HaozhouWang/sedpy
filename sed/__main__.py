@@ -6,7 +6,7 @@ from . import Sed
 def main(args, help):
     sed = Sed(args.script, quiet=args.quiet)
     for line in fileinput.input(args.files):
-        sed.parseString(line)
+        sed.parse(line)
 
 
 if __name__ == '__main__':
